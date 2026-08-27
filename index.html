@@ -50,7 +50,7 @@
   <h1>&#9670; Ambience</h1>
   <div class="mood" id="mood-label">Explore</div>
   <div class="player-box">
-    <iframe id="yt-frame" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    <div id="yt-frame"></div>
     <div class="overlay" id="overlay">
       <button id="start-btn">&#9654; Start Ambience</button>
       <p>One click, once per session &mdash; browsers block audio until you interact with the page.</p>
@@ -73,7 +73,7 @@
 <script>
   // ---- Curated by Claude. Grouped by campaign moment. Add more any time a scene needs one. ----
   const GROUPS = [
-    { label: 'Travel & Exploration', moods: ['explore','forest','cave','sailing','storm'] },
+    { label: 'Travel & Exploration', moods: ['explore','forest','cave','sailing','storm','nightstreets'] },
     { label: 'Settlements & Social', moods: ['tavern','market','court','temple'] },
     { label: 'Rest', moods: ['camp'] },
     { label: 'Combat & Danger', moods: ['combat','boss','stealth','chase','horror'] },
@@ -89,6 +89,10 @@
     cave: [{ id: 'NMUoicf5kYw', title: 'D&D Ambience — The Underdark', channel: 'D&D Ambience' }],
     sailing: [{ id: 'iC4zLP31nd4', title: 'D&D Ambience — Large Ship Sailing', channel: 'D&D Ambience' }],
     storm: [{ id: 'w7_7pz5-Jk0', title: 'Thunderstorm | D&D/TTRPG Ambience', channel: 'D&D/TTRPG Ambience' }],
+    nightstreets: [
+      { id: 'FvgV3G-EnnQ', title: 'Evening In The City | Guards, Stealthy Figures', channel: 'Medieval Ambience' },
+      { id: 'brCswWZsNHk', title: 'Night City | Dark Fantasy Ambience', channel: 'D&D/TTRPG Music' },
+    ],
 
     tavern: [
       { id: 'f846WOhCt2g', title: 'Quiet Tavern, Lute and Hearth', channel: 'D&D Ambience & Music' },
@@ -118,12 +122,13 @@
     triumph: [{ id: 'E0v0WBlzlSQ', title: 'Jubilation | RPG Victory Theme', channel: 'Fantasy Celebration Music' }],
   };
 
-  const LABELS = { explore:'Explore', forest:'Forest', cave:'Underdark', sailing:'Sailing', storm:'Storm',
+  const LABELS = { explore:'Explore', forest:'Forest', cave:'Underdark', sailing:'Sailing', storm:'Storm', nightstreets:'Night Streets',
     tavern:'Tavern', market:'Market', court:'Court', temple:'Temple', camp:'Camp',
     combat:'Combat', boss:'Boss Fight', stealth:'Stealth', chase:'Chase', horror:'Horror',
     mystery:'Mystery', ominous:'Ominous', sorrow:'Sorrow', triumph:'Triumph' };
 
   window.AMBIENCE = { mood: 'explore', trackIndex: 0, muted: false, paused: false, started: false };
+  let player = null;
 
   // Build the grouped button UI
   const groupsEl = document.getElementById('groups');
@@ -148,13 +153,6 @@
     groupsEl.appendChild(gDiv);
   });
 
-  function embedUrl(id, muted){
-    const p = new URLSearchParams({
-      autoplay: '1', mute: muted ? '1' : '0', loop: '1', playlist: id, rel: '0', modestbranding: '1'
-    });
-    return 'https://www.youtube.com/embed/' + id + '?' + p.toString();
-  }
-
   function currentTrack(){ return VIDEOS[window.AMBIENCE.mood][window.AMBIENCE.trackIndex]; }
 
   function renderAll(){
@@ -171,8 +169,10 @@
   }
 
   function loadCurrent(){
-    if(window.AMBIENCE.paused){ document.getElementById('yt-frame').src = 'about:blank'; return; }
-    document.getElementById('yt-frame').src = embedUrl(currentTrack().id, window.AMBIENCE.muted);
+    if(!player) return;
+    if(window.AMBIENCE.paused){ player.pauseVideo(); return; }
+    player.loadVideoById(currentTrack().id);
+    if(window.AMBIENCE.muted){ player.mute(); } else { player.unMute(); }
   }
 
   window.setMood = function(mood){
@@ -180,25 +180,54 @@
     window.AMBIENCE.mood = mood;
     window.AMBIENCE.trackIndex = 0;
     window.AMBIENCE.paused = false;
-    if(window.AMBIENCE.started) loadCurrent();
+    loadCurrent();
     renderAll();
   };
   window.nextTrack = function(){
     const list = VIDEOS[window.AMBIENCE.mood];
     window.AMBIENCE.trackIndex = (window.AMBIENCE.trackIndex + 1) % list.length;
     window.AMBIENCE.paused = false;
-    if(window.AMBIENCE.started) loadCurrent();
+    loadCurrent();
     renderAll();
   };
-  window.muteAmbience = function(){ window.AMBIENCE.muted = true; loadCurrent(); renderAll(); };
-  window.unmuteAmbience = function(){ window.AMBIENCE.muted = false; loadCurrent(); renderAll(); };
-  window.pauseAmbience = function(){ window.AMBIENCE.paused = true; loadCurrent(); renderAll(); };
-  window.resumeAmbience = function(){ window.AMBIENCE.paused = false; loadCurrent(); renderAll(); };
+  window.muteAmbience = function(){ window.AMBIENCE.muted = true; if(player) player.mute(); renderAll(); };
+  window.unmuteAmbience = function(){ window.AMBIENCE.muted = false; if(player) player.unMute(); renderAll(); };
+  window.pauseAmbience = function(){ window.AMBIENCE.paused = true; if(player) player.pauseVideo(); renderAll(); };
+  window.resumeAmbience = function(){ window.AMBIENCE.paused = false; if(player) player.playVideo(); renderAll(); };
+
+  function createPlayer(){
+    player = new YT.Player('yt-frame', {
+      videoId: currentTrack().id,
+      playerVars: { autoplay: 1, mute: 0, rel: 0, modestbranding: 1 },
+      events: {
+        onStateChange: (e) => {
+          // Reliable manual loop — the URL-param loop trick is flaky, this always restarts on end.
+          if (e.data === YT.PlayerState.ENDED) {
+            e.target.seekTo(0);
+            e.target.playVideo();
+          }
+        },
+        onError: () => {
+          document.getElementById('status').textContent = 'track unavailable — try Next Track';
+        }
+      }
+    });
+  }
+
+  window.onYouTubeIframeAPIReady = function(){
+    if (window.AMBIENCE.started) createPlayer();
+  };
 
   document.getElementById('start-btn').addEventListener('click', () => {
     window.AMBIENCE.started = true;
     document.getElementById('overlay').classList.add('hidden');
-    loadCurrent();
+    if (window.YT && window.YT.Player) {
+      createPlayer();
+    } else {
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(tag);
+    }
     renderAll();
   });
   document.getElementById('next-btn').addEventListener('click', () => window.nextTrack());
