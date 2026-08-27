@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ambience — Eamon Shade's Ledger</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{ --bg:#15161d; --edge:#39362b; --text:#e9e2d3; --text-dim:#948c7c; --flame:#d98a3d; --good:#7fae72; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:Georgia,'Iowan Old Style',serif;}
+  .wrap{max-width:760px;margin:0 auto;padding:24px 18px;text-align:center;}
+  h1{font-size:1.1rem;font-weight:normal;letter-spacing:0.03em;color:var(--flame);margin:0 0 4px;}
+  .mood{font-size:0.8rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:18px;}
+  .player-box{position:relative;background:#000;border:1px solid var(--edge);border-radius:4px;overflow:hidden;aspect-ratio:16/9;}
+  #yt-frame{width:100%;height:100%;border:0;display:block;}
+  .overlay{position:absolute;inset:0;background:rgba(10,9,7,0.9);display:flex;
+    flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity .25s;}
+  .overlay.hidden{opacity:0;pointer-events:none;}
+  .overlay button{background:var(--flame);border:none;color:#1b1713;font-weight:bold;
+    padding:12px 26px;border-radius:3px;font-size:0.95rem;cursor:pointer;font-family:inherit;}
+  .overlay p{color:var(--text-dim);font-size:0.8rem;margin:0;max-width:340px;}
+
+  .groups{margin-top:18px;text-align:left;}
+  .group{margin-bottom:10px;}
+  .group-label{font-size:0.62rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-dim);
+    margin-bottom:5px;}
+  .mood-row{display:flex;gap:5px;flex-wrap:wrap;}
+  .mood-btn{background:var(--edge);border:1px solid #55503f;color:var(--text-dim);
+    padding:6px 12px;border-radius:3px;font-size:0.74rem;cursor:pointer;font-family:inherit;
+    text-transform:uppercase;letter-spacing:0.04em;transition:all .15s;}
+  .mood-btn:hover{color:var(--text);}
+  .mood-btn.active{background:var(--flame);color:#1b1713;font-weight:bold;border-color:var(--flame);}
+
+  .controls{display:flex;gap:8px;justify-content:center;margin-top:16px;}
+  .ctrl-btn{background:var(--edge);border:1px solid var(--flame);color:var(--text);
+    padding:8px 18px;border-radius:3px;font-size:0.82rem;cursor:pointer;font-family:inherit;
+    letter-spacing:0.02em;transition:background .15s;}
+  .ctrl-btn:hover{background:#4a4636;}
+  .ctrl-btn.active{background:var(--flame);color:#1b1713;font-weight:bold;border-color:var(--flame);}
+
+  .status{margin-top:12px;font-size:0.75rem;color:var(--good);text-align:center;}
+  .credit{margin-top:8px;font-size:0.72rem;color:var(--text-dim);text-align:center;}
+  .credit a{color:var(--text-dim);}
+  .note{margin-top:14px;font-size:0.7rem;color:var(--text-dim);font-style:italic;text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>&#9670; Ambience</h1>
+  <div class="mood" id="mood-label">Explore</div>
+  <div class="player-box">
+    <iframe id="yt-frame" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    <div class="overlay" id="overlay">
+      <button id="start-btn">&#9654; Start Ambience</button>
+      <p>One click, once per session &mdash; browsers block audio until you interact with the page.</p>
+    </div>
+  </div>
+
+  <div class="groups" id="groups"></div>
+
+  <div class="controls">
+    <button class="ctrl-btn" id="next-btn">Next Track</button>
+    <button class="ctrl-btn" id="mute-btn">Mute</button>
+    <button class="ctrl-btn" id="pause-btn">Stop</button>
+  </div>
+
+  <div class="status" id="status">waiting to start&hellip;</div>
+  <div class="credit" id="credit"></div>
+  <div class="note">Leave this tab open in the background. Your GM will tell you when to switch mood &mdash; everything here is a single click, no refresh needed.</div>
+</div>
+
+<script>
+  // ---- Curated by Claude. Grouped by campaign moment. Add more any time a scene needs one. ----
+  const GROUPS = [
+    { label: 'Travel & Exploration', moods: ['explore','forest','cave','sailing','storm'] },
+    { label: 'Settlements & Social', moods: ['tavern','market','court','temple'] },
+    { label: 'Rest', moods: ['camp'] },
+    { label: 'Combat & Danger', moods: ['combat','boss','stealth','chase','horror'] },
+    { label: 'Story Beats', moods: ['mystery','ominous','sorrow','triumph'] },
+  ];
+
+  const VIDEOS = {
+    explore: [
+      { id: 'dDvbv_ya43s', title: 'Dock Ward | Waterdeep Dock Ambience', channel: 'Sounds of the Sword Coast' },
+      { id: 'XO1MC0BS3K4', title: 'Seaside Town | D&D/TTRPG Music | 1 Hour', channel: 'D&D/TTRPG Music' },
+    ],
+    forest: [{ id: 'bLZApMsorjA', title: 'Wilderness Travel | D&D/TTRPG Music', channel: 'D&D/TTRPG Music' }],
+    cave: [{ id: 'NMUoicf5kYw', title: 'D&D Ambience — The Underdark', channel: 'D&D Ambience' }],
+    sailing: [{ id: 'iC4zLP31nd4', title: 'D&D Ambience — Large Ship Sailing', channel: 'D&D Ambience' }],
+    storm: [{ id: 'w7_7pz5-Jk0', title: 'Thunderstorm | D&D/TTRPG Ambience', channel: 'D&D/TTRPG Ambience' }],
+
+    tavern: [
+      { id: 'f846WOhCt2g', title: 'Quiet Tavern, Lute and Hearth', channel: 'D&D Ambience & Music' },
+      { id: 'O738AtAwacI', title: 'Cozy Tavern — Music & Ambience', channel: 'Tavern Music' },
+    ],
+    market: [{ id: 'qqAb2HkBVPo', title: 'Busy Market Ambience | Leilon Market', channel: 'Sounds of the Sword Coast' }],
+    court: [{ id: 'XY_blkutOag', title: 'Royal Court | D&D/TTRPG Ambience', channel: 'D&D/TTRPG Ambience' }],
+    temple: [{ id: 'bD4L0j5SrFM', title: 'Holy Temple | Sacred Ambience', channel: 'D&D Ambience' }],
+
+    camp: [{ id: '7KFoj-SOfHs', title: 'D&D Ambience — Night Camp in Woods', channel: 'D&D Ambience' }],
+
+    combat: [
+      { id: 'I39Z4ccF_KE', title: '1 Hour of D&D Battle Music', channel: 'D&D/TTRPG Epic Intense Combat Music' },
+      { id: 'q3zVfDSSyWs', title: '1 Hour Intense Epic Battle Music', channel: 'TTRPG Battle Music' },
+    ],
+    boss: [{ id: 'rA0d7C6nS6o', title: "'Demon's Wrath' — Epic Boss Battle Music", channel: 'TTRPG Boss Music' }],
+    stealth: [
+      { id: 'rdvhfPOk8_c', title: 'D&D Stealth Mission Music', channel: 'Sneaking, Infiltration, Tension' },
+      { id: 'V0ejAkFqZoQ', title: 'Stealth Music — Base Infiltration (Hour Loop)', channel: 'Stealth Music' },
+    ],
+    chase: [{ id: 'fq8OSrIUST4', title: 'Chase | D&D/TTRPG Battle Music', channel: 'D&D/TTRPG Music' }],
+    horror: [{ id: 'JIzzxLTQ2zg', title: 'Creepy Dark Ambient Music for Horror', channel: 'Dark Ambient' }],
+
+    mystery: [{ id: '7wBzL62Va1k', title: 'Investigating a Mystery | D&D/TTRPG Music', channel: 'D&D/TTRPG Music' }],
+    ominous: [{ id: '3FNuE_sBquk', title: 'D&D/RPG Ominous Music Mix', channel: 'Travis Savoie' }],
+    sorrow: [{ id: 'fXA8zHLdYF0', title: 'A City in Sorrow | D&D/TTRPG Music', channel: 'D&D/TTRPG Music' }],
+    triumph: [{ id: 'E0v0WBlzlSQ', title: 'Jubilation | RPG Victory Theme', channel: 'Fantasy Celebration Music' }],
+  };
+
+  const LABELS = { explore:'Explore', forest:'Forest', cave:'Underdark', sailing:'Sailing', storm:'Storm',
+    tavern:'Tavern', market:'Market', court:'Court', temple:'Temple', camp:'Camp',
+    combat:'Combat', boss:'Boss Fight', stealth:'Stealth', chase:'Chase', horror:'Horror',
+    mystery:'Mystery', ominous:'Ominous', sorrow:'Sorrow', triumph:'Triumph' };
+
+  window.AMBIENCE = { mood: 'explore', trackIndex: 0, muted: false, paused: false, started: false };
+
+  // Build the grouped button UI
+  const groupsEl = document.getElementById('groups');
+  GROUPS.forEach(g => {
+    const gDiv = document.createElement('div');
+    gDiv.className = 'group';
+    const label = document.createElement('div');
+    label.className = 'group-label';
+    label.textContent = g.label;
+    gDiv.appendChild(label);
+    const row = document.createElement('div');
+    row.className = 'mood-row';
+    g.moods.forEach(m => {
+      const btn = document.createElement('button');
+      btn.className = 'mood-btn';
+      btn.dataset.mood = m;
+      btn.textContent = LABELS[m] || m;
+      btn.addEventListener('click', () => window.setMood(m));
+      row.appendChild(btn);
+    });
+    gDiv.appendChild(row);
+    groupsEl.appendChild(gDiv);
+  });
+
+  function embedUrl(id, muted){
+    const p = new URLSearchParams({
+      autoplay: '1', mute: muted ? '1' : '0', loop: '1', playlist: id, rel: '0', modestbranding: '1'
+    });
+    return 'https://www.youtube.com/embed/' + id + '?' + p.toString();
+  }
+
+  function currentTrack(){ return VIDEOS[window.AMBIENCE.mood][window.AMBIENCE.trackIndex]; }
+
+  function renderAll(){
+    const t = currentTrack();
+    document.getElementById('mood-label').textContent = LABELS[window.AMBIENCE.mood] || window.AMBIENCE.mood;
+    document.getElementById('credit').innerHTML =
+      '"' + t.title + '" &mdash; ' + t.channel + ' &middot; <a href="https://www.youtube.com/watch?v=' + t.id + '" target="_blank" rel="noopener">open on YouTube</a>';
+    document.querySelectorAll('.mood-btn').forEach(b => b.classList.toggle('active', b.dataset.mood === window.AMBIENCE.mood));
+    document.getElementById('mute-btn').textContent = window.AMBIENCE.muted ? 'Unmute' : 'Mute';
+    document.getElementById('mute-btn').classList.toggle('active', window.AMBIENCE.muted);
+    document.getElementById('pause-btn').textContent = window.AMBIENCE.paused ? 'Resume' : 'Stop';
+    document.getElementById('pause-btn').classList.toggle('active', window.AMBIENCE.paused);
+    document.getElementById('status').textContent = window.AMBIENCE.paused ? 'stopped' : (window.AMBIENCE.muted ? 'muted' : 'playing');
+  }
+
+  function loadCurrent(){
+    if(window.AMBIENCE.paused){ document.getElementById('yt-frame').src = 'about:blank'; return; }
+    document.getElementById('yt-frame').src = embedUrl(currentTrack().id, window.AMBIENCE.muted);
+  }
+
+  window.setMood = function(mood){
+    if(!VIDEOS[mood]) return;
+    window.AMBIENCE.mood = mood;
+    window.AMBIENCE.trackIndex = 0;
+    window.AMBIENCE.paused = false;
+    if(window.AMBIENCE.started) loadCurrent();
+    renderAll();
+  };
+  window.nextTrack = function(){
+    const list = VIDEOS[window.AMBIENCE.mood];
+    window.AMBIENCE.trackIndex = (window.AMBIENCE.trackIndex + 1) % list.length;
+    window.AMBIENCE.paused = false;
+    if(window.AMBIENCE.started) loadCurrent();
+    renderAll();
+  };
+  window.muteAmbience = function(){ window.AMBIENCE.muted = true; loadCurrent(); renderAll(); };
+  window.unmuteAmbience = function(){ window.AMBIENCE.muted = false; loadCurrent(); renderAll(); };
+  window.pauseAmbience = function(){ window.AMBIENCE.paused = true; loadCurrent(); renderAll(); };
+  window.resumeAmbience = function(){ window.AMBIENCE.paused = false; loadCurrent(); renderAll(); };
+
+  document.getElementById('start-btn').addEventListener('click', () => {
+    window.AMBIENCE.started = true;
+    document.getElementById('overlay').classList.add('hidden');
+    loadCurrent();
+    renderAll();
+  });
+  document.getElementById('next-btn').addEventListener('click', () => window.nextTrack());
+  document.getElementById('mute-btn').addEventListener('click', () => window.AMBIENCE.muted ? window.unmuteAmbience() : window.muteAmbience());
+  document.getElementById('pause-btn').addEventListener('click', () => window.AMBIENCE.paused ? window.resumeAmbience() : window.pauseAmbience());
+
+  renderAll();
+</script>
+</body>
+</html>
