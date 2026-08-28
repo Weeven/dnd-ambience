@@ -5,7 +5,7 @@
 <title>Ambience — Eamon Shade's Ledger</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-  :root{ --bg:#15161d; --edge:#39362b; --text:#e9e2d3; --text-dim:#948c7c; --flame:#d98a3d; --good:#7fae72; }
+  :root{ --bg:#15161d; --edge:#39362b; --text:#e9e2d3; --text-dim:#948c7c; --flame:#d98a3d; --good:#7fae72; --bad:#b5482f; }
   *{box-sizing:border-box;}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
     font-family:Georgia,'Iowan Old Style',serif;}
@@ -43,6 +43,26 @@
   .credit{margin-top:8px;font-size:0.72rem;color:var(--text-dim);text-align:center;}
   .credit a{color:var(--text-dim);}
   .note{margin-top:14px;font-size:0.7rem;color:var(--text-dim);font-style:italic;text-align:center;}
+
+  .discover{margin-top:22px;text-align:left;border-top:1px solid var(--edge);padding-top:16px;}
+  .discover h2{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-dim);margin:0 0 10px;font-weight:normal;}
+  .discover-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+  .discover input, .discover select{background:var(--edge);border:1px solid #55503f;color:var(--text);
+    padding:6px 8px;border-radius:3px;font-size:0.78rem;font-family:inherit;}
+  .discover input[type=text]{flex:1;min-width:110px;}
+  .discover button{background:var(--edge);border:1px solid var(--flame);color:var(--text);
+    padding:6px 12px;border-radius:3px;font-size:0.78rem;cursor:pointer;font-family:inherit;white-space:nowrap;}
+  .discover button:hover{background:#4a4636;}
+  .cand-group-label{font-size:0.62rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin:10px 0 4px;}
+  .candidate{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.78rem;}
+  .candidate .info{flex:1;color:var(--text-dim);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .candidate .info b{color:var(--text);font-weight:normal;}
+  .candidate button{padding:4px 9px;font-size:0.85rem;border-radius:3px;border:1px solid #55503f;background:var(--edge);cursor:pointer;flex-shrink:0;}
+  .candidate .yes{border-color:var(--good);color:var(--good);}
+  .candidate .no{border-color:var(--bad);color:var(--bad);}
+  .candidate .preview{color:var(--text-dim);}
+  .empty-candidates{color:var(--text-dim);font-style:italic;font-size:0.76rem;}
+  .toast{font-size:0.74rem;color:var(--good);margin-top:6px;min-height:1em;}
 </style>
 </head>
 <body>
@@ -68,16 +88,34 @@
   <div class="status" id="status">waiting to start&hellip;</div>
   <div class="credit" id="credit"></div>
   <div class="note">Leave this tab open in the background. Your GM will tell you when to switch mood &mdash; everything here is a single click, no refresh needed.</div>
+
+  <div class="discover" id="discover">
+    <h2>Discover &amp; Curate</h2>
+    <div class="discover-row">
+      <input type="text" id="yt-search-input" placeholder="keyword, e.g. &quot;jungle ambience&quot;">
+      <button id="yt-search-btn">Search YouTube &#8599;</button>
+    </div>
+    <div class="discover-row">
+      <select id="cand-mood"></select>
+      <input type="text" id="cand-id" placeholder="video ID or URL">
+      <input type="text" id="cand-title" placeholder="title">
+      <input type="text" id="cand-channel" placeholder="channel (optional)">
+      <button id="cand-add-btn">Add for review</button>
+    </div>
+    <div class="toast" id="cand-toast"></div>
+    <div id="candidates-list"></div>
+  </div>
 </div>
 
 <script>
   // ---- Curated by Claude. Grouped by campaign moment. Add more any time a scene needs one. ----
   const GROUPS = [
-    { label: 'Travel & Exploration', moods: ['explore','forest','cave','sailing','storm','nightstreets'] },
-    { label: 'Settlements & Social', moods: ['tavern','market','court','temple'] },
-    { label: 'Rest', moods: ['camp'] },
+    { label: 'Travel & Exploration', moods: ['explore','forest','cave','sailing','storm','nightstreets','farm','jungle','mines'] },
+    { label: 'Settlements & Social', moods: ['tavern','market','court','temple','cozyhome','festival','castle','blacksmith'] },
+    { label: 'Rest', moods: ['camp','shipcabin'] },
     { label: 'Combat & Danger', moods: ['combat','boss','stealth','chase','horror'] },
     { label: 'Story Beats', moods: ['mystery','ominous','sorrow','triumph'] },
+    { label: 'Wildcards', moods: ['western'] },
   ];
 
   const VIDEOS = {
@@ -120,12 +158,175 @@
     ominous: [{ id: '3FNuE_sBquk', title: 'D&D/RPG Ominous Music Mix', channel: 'Travis Savoie' }],
     sorrow: [{ id: 'fXA8zHLdYF0', title: 'A City in Sorrow | D&D/TTRPG Music', channel: 'D&D/TTRPG Music' }],
     triumph: [{ id: 'E0v0WBlzlSQ', title: 'Jubilation | RPG Victory Theme', channel: 'Fantasy Celebration Music' }],
+
+    farm: [
+      { id: 'tE4JcwD8Mk0', title: 'Fantasy Farm Ambience | D&D Music', channel: 'D&D/TTRPG Music' },
+      { id: 'wEEc9RhHTzU', title: 'Countryside | Farms, Peasants, Medieval Ambience', channel: 'D&D Ambience' },
+    ],
+    jungle: [
+      { id: 'eWLDwkH71cM', title: 'D&D Ambience | Jungle | Tropical, Rainforest', channel: 'D&D Ambience' },
+      { id: '5Jzp5H4mQVE', title: 'D&D Ambience | Mysterious Jungle | Immersive, Animals', channel: 'D&D Ambience' },
+    ],
+    mines: [
+      { id: 'CXHDzj4s9zA', title: 'Abandoned Mines | D&D/RPG Ambience', channel: 'D&D/RPG Ambience' },
+      { id: 'F6_ZuJSWQ4c', title: 'Active Mine | Workers, Boulders, Dwarves Ambience', channel: 'D&D Ambience' },
+    ],
+
+    cozyhome: [
+      { id: 'V7PpeZzltLI', title: 'D&D Ambience - Cozy Home (fireplace, rain, reading)', channel: 'D&D Ambience' },
+      { id: '1q_cHSlI_aY', title: 'Cozy Library | Fireplace Ambience', channel: 'D&D Ambience' },
+    ],
+    festival: [
+      { id: 'gcPSA3sUilc', title: 'RPG Ambience - Joyful Festival (crowd, music, cheering)', channel: 'RPG Ambience' },
+      { id: 'rEfKdWSlcUo', title: 'Medieval Festival | Bear Tamers, Music, People', channel: 'D&D Ambience' },
+    ],
+    castle: [
+      { id: 'MvK_Q8PbdKU', title: 'Castle Throne Room Ambience | Grand Fantasy Hall', channel: 'D&D Ambience' },
+      { id: 'XY_blkutOag', title: 'Royal Court | D&D/TTRPG Ambience', channel: 'D&D/TTRPG Ambience' },
+    ],
+    blacksmith: [
+      { id: 'gsn1HnI1pCQ', title: 'RPG | D&D Ambience - Underground Forge (lava, fire, anvil)', channel: 'D&D Ambience' },
+      { id: 'pRkFl9j3NLk', title: 'Blacksmith | Medieval Ambience', channel: 'D&D Ambience' },
+    ],
+
+    shipcabin: [
+      { id: 'iVLpFoo7ToA', title: 'RPG | D&D Ambience - Ship Cabin (wood creaking, waves)', channel: 'D&D Ambience' },
+      { id: 'dXE3qzfsGyY', title: "Pirate Ship Ambience - Captain's Cabin, Creaky Wooden", channel: 'Pirate Ship Ambience' },
+    ],
+
+    western: [
+      { id: 'L5w4Ys2e0Aw', title: 'Wild West Saloon Ambience | Saloon Soundscape', channel: 'Wild West Ambience' },
+      { id: '50JXzFixi98', title: 'Saloon Ambience / Wild West Music / ASMR', channel: 'Wild West Ambience' },
+    ],
   };
 
   const LABELS = { explore:'Explore', forest:'Forest', cave:'Underdark', sailing:'Sailing', storm:'Storm', nightstreets:'Night Streets',
-    tavern:'Tavern', market:'Market', court:'Court', temple:'Temple', camp:'Camp',
+    farm:'Farm', jungle:'Jungle', mines:'Mines',
+    tavern:'Tavern', market:'Market', court:'Court', temple:'Temple',
+    cozyhome:'Cozy Home', festival:'Festival', castle:'Castle', blacksmith:'Blacksmith',
+    camp:'Camp', shipcabin:'Ship Cabin',
     combat:'Combat', boss:'Boss Fight', stealth:'Stealth', chase:'Chase', horror:'Horror',
-    mystery:'Mystery', ominous:'Ominous', sorrow:'Sorrow', triumph:'Triumph' };
+    mystery:'Mystery', ominous:'Ominous', sorrow:'Sorrow', triumph:'Triumph',
+    western:'Western' };
+
+  // ---- Discover & curate: no API key needed. "Search YouTube" opens a real search tab;
+  // candidates get added (by you, or by your GM via the console/javascript tool) to CANDIDATES
+  // below, then reviewed here with thumbs up/down. Verdicts persist in this browser's localStorage. ----
+  const CANDIDATES = {};
+  const LIB_KEY = 'ambience_verdicts';
+
+  function loadVerdicts(){
+    try { return JSON.parse(localStorage.getItem(LIB_KEY)) || { approved: [], rejected: [] }; }
+    catch(e){ return { approved: [], rejected: [] }; }
+  }
+  function saveVerdicts(v){
+    try { localStorage.setItem(LIB_KEY, JSON.stringify(v)); } catch(e){}
+  }
+  window.exportLibraryVerdicts = function(){ return loadVerdicts(); };
+
+  function extractId(v){
+    v = (v || '').trim();
+    const m = v.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/);
+    if (m) return m[1];
+    if (/^[A-Za-z0-9_-]{11}$/.test(v)) return v;
+    return null;
+  }
+
+  function showToast(msg){
+    const t = document.getElementById('cand-toast');
+    if (!t) return;
+    t.textContent = msg;
+    setTimeout(() => { if (t.textContent === msg) t.textContent = ''; }, 3000);
+  }
+
+  window.addCandidate = function(mood, idOrUrl, title, channel){
+    if (!VIDEOS[mood]) { showToast('Unknown mood: ' + mood); return false; }
+    const id = extractId(idOrUrl);
+    if (!id) { showToast('Could not read a video ID from that.'); return false; }
+    const verdicts = loadVerdicts();
+    if (verdicts.rejected.includes(id)) { showToast('Already reviewed and rejected once — skipping.'); return false; }
+    if (VIDEOS[mood].some(t => t.id === id) || (CANDIDATES[mood] || []).some(t => t.id === id)) {
+      showToast('Already in the library or pending review.'); return false;
+    }
+    if (!CANDIDATES[mood]) CANDIDATES[mood] = [];
+    CANDIDATES[mood].push({ id, title: title || '(untitled)', channel: channel || '' });
+    renderCandidates();
+    showToast('Added "' + (title || id) + '" to ' + (LABELS[mood] || mood) + ' for review.');
+    return true;
+  };
+
+  window.previewCandidate = function(id){
+    if (!player) { showToast('Click Start Ambience first.'); return; }
+    player.loadVideoById(id);
+    if (window.AMBIENCE.muted) { player.mute(); } else { player.unMute(); }
+    showToast('Previewing — pick a mood button to go back to the normal library.');
+  };
+
+  window.approveCandidate = function(mood, id){
+    const list = CANDIDATES[mood] || [];
+    const idx = list.findIndex(t => t.id === id);
+    if (idx === -1) return;
+    const track = list[idx];
+    list.splice(idx, 1);
+    VIDEOS[mood].push(track);
+    const verdicts = loadVerdicts();
+    verdicts.approved.push({ mood, id: track.id, title: track.title, channel: track.channel });
+    saveVerdicts(verdicts);
+    renderCandidates();
+    showToast('Added "' + track.title + '" to the ' + (LABELS[mood] || mood) + ' library.');
+  };
+
+  window.rejectCandidate = function(mood, id){
+    const list = CANDIDATES[mood] || [];
+    const idx = list.findIndex(t => t.id === id);
+    if (idx === -1) return;
+    const track = list[idx];
+    list.splice(idx, 1);
+    const verdicts = loadVerdicts();
+    if (!verdicts.rejected.includes(id)) verdicts.rejected.push(id);
+    saveVerdicts(verdicts);
+    renderCandidates();
+    showToast('Rejected "' + track.title + '" — won\'t be suggested again.');
+  };
+
+  function renderCandidates(){
+    const el = document.getElementById('candidates-list');
+    if (!el) return;
+    el.innerHTML = '';
+    const moods = Object.keys(CANDIDATES).filter(m => (CANDIDATES[m] || []).length > 0);
+    if (moods.length === 0) {
+      el.innerHTML = '<div class="empty-candidates">No tracks waiting for review right now. Ask your GM to find some, or paste one above.</div>';
+      return;
+    }
+    moods.forEach(mood => {
+      const gLabel = document.createElement('div');
+      gLabel.className = 'cand-group-label';
+      gLabel.textContent = LABELS[mood] || mood;
+      el.appendChild(gLabel);
+      CANDIDATES[mood].forEach(track => {
+        const row = document.createElement('div');
+        row.className = 'candidate';
+        const info = document.createElement('div');
+        info.className = 'info';
+        info.innerHTML = '<b>' + track.title + '</b>' + (track.channel ? ' &mdash; ' + track.channel : '');
+        row.appendChild(info);
+        const pBtn = document.createElement('button');
+        pBtn.className = 'preview'; pBtn.textContent = '&#9654;'; pBtn.title = 'Preview';
+        pBtn.innerHTML = '&#9654;';
+        pBtn.addEventListener('click', () => window.previewCandidate(track.id));
+        row.appendChild(pBtn);
+        const yBtn = document.createElement('button');
+        yBtn.className = 'yes'; yBtn.innerHTML = '&#128077;'; yBtn.title = 'Add to library';
+        yBtn.addEventListener('click', () => window.approveCandidate(mood, track.id));
+        row.appendChild(yBtn);
+        const nBtn = document.createElement('button');
+        nBtn.className = 'no'; nBtn.innerHTML = '&#128078;'; nBtn.title = 'Reject';
+        nBtn.addEventListener('click', () => window.rejectCandidate(mood, track.id));
+        row.appendChild(nBtn);
+        el.appendChild(row);
+      });
+    });
+  }
 
   window.AMBIENCE = { mood: 'explore', trackIndex: 0, muted: false, paused: false, started: false };
   let player = null;
@@ -185,6 +386,16 @@
   };
   window.nextTrack = function(){
     const list = VIDEOS[window.AMBIENCE.mood];
+    if (list.length <= 1) {
+      // Only one track for this mood — "next" can't cycle, so force a clean restart
+      // instead of silently no-opping (loadVideoById on the same id doesn't reliably reload).
+      window.AMBIENCE.paused = false;
+      if (player) { player.seekTo(0, true); player.playVideo(); if(window.AMBIENCE.muted){player.mute();}else{player.unMute();} }
+      renderAll();
+      const c = document.getElementById('credit');
+      if (c) { const prev = c.innerHTML; c.innerHTML = '<em>Only one track curated for this mood — restarting it. More coming soon.</em>'; setTimeout(() => { c.innerHTML = prev; }, 2500); }
+      return;
+    }
     window.AMBIENCE.trackIndex = (window.AMBIENCE.trackIndex + 1) % list.length;
     window.AMBIENCE.paused = false;
     loadCurrent();
@@ -233,6 +444,32 @@
   document.getElementById('next-btn').addEventListener('click', () => window.nextTrack());
   document.getElementById('mute-btn').addEventListener('click', () => window.AMBIENCE.muted ? window.unmuteAmbience() : window.muteAmbience());
   document.getElementById('pause-btn').addEventListener('click', () => window.AMBIENCE.paused ? window.resumeAmbience() : window.pauseAmbience());
+
+  // Discover & curate wiring
+  const candMoodSel = document.getElementById('cand-mood');
+  Object.keys(VIDEOS).forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = LABELS[m] || m;
+    candMoodSel.appendChild(opt);
+  });
+  document.getElementById('yt-search-btn').addEventListener('click', () => {
+    const q = document.getElementById('yt-search-input').value.trim();
+    if (!q) { showToast('Type a keyword first.'); return; }
+    window.open('https://www.youtube.com/results?search_query=' + encodeURIComponent(q), '_blank', 'noopener');
+  });
+  document.getElementById('cand-add-btn').addEventListener('click', () => {
+    const mood = candMoodSel.value;
+    const idVal = document.getElementById('cand-id').value;
+    const title = document.getElementById('cand-title').value;
+    const channel = document.getElementById('cand-channel').value;
+    if (window.addCandidate(mood, idVal, title, channel)) {
+      document.getElementById('cand-id').value = '';
+      document.getElementById('cand-title').value = '';
+      document.getElementById('cand-channel').value = '';
+    }
+  });
+  renderCandidates();
 
   renderAll();
 </script>
