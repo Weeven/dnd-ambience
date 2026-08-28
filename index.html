@@ -251,6 +251,17 @@
   }
   window.exportLibraryVerdicts = function(){ return loadVerdicts(); };
 
+  // Re-apply past likes on every page load, so an approval survives a refresh
+  // without needing a fresh deploy — it lives in this browser's localStorage.
+  function applyStoredVerdicts(){
+    const v = loadVerdicts();
+    v.approved.forEach(t => {
+      if (VIDEOS[t.mood] && !VIDEOS[t.mood].some(x => x.id === t.id)) {
+        VIDEOS[t.mood].push({ id: t.id, title: t.title, channel: t.channel });
+      }
+    });
+  }
+
   function extractId(v){
     v = (v || '').trim();
     const m = v.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/);
@@ -499,6 +510,7 @@
       document.getElementById('cand-channel').value = '';
     }
   });
+  applyStoredVerdicts();
   loadCandidates();
   renderCandidates();
 
