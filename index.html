@@ -110,10 +110,10 @@
 <script>
   // ---- Curated by Claude. Grouped by campaign moment. Add more any time a scene needs one. ----
   const GROUPS = [
-    { label: 'Travel & Exploration', moods: ['explore','forest','cave','sailing','storm','nightstreets','farm','jungle','mines'] },
-    { label: 'Settlements & Social', moods: ['tavern','market','court','temple','cozyhome','festival','castle','blacksmith'] },
+    { label: 'Travel & Exploration', moods: ['explore','forest','cave','sailing','storm','nightstreets','farm','jungle','mines','graveyard','desert','swamp','underwater','tundra','volcano','harbor'] },
+    { label: 'Settlements & Social', moods: ['tavern','market','court','temple','cozyhome','festival','castle','blacksmith','laboratory','carnival','library'] },
     { label: 'Rest', moods: ['camp','shipcabin'] },
-    { label: 'Combat & Danger', moods: ['combat','boss','stealth','chase','horror'] },
+    { label: 'Combat & Danger', moods: ['combat','boss','stealth','chase','horror','prison','arena'] },
     { label: 'Story Beats', moods: ['mystery','ominous','sorrow','triumph'] },
     { label: 'Wildcards', moods: ['western'] },
   ];
@@ -137,7 +137,7 @@
       { id: 'O738AtAwacI', title: 'Cozy Tavern — Music & Ambience', channel: 'Tavern Music' },
     ],
     market: [{ id: 'qqAb2HkBVPo', title: 'Busy Market Ambience | Leilon Market', channel: 'Sounds of the Sword Coast' }],
-    court: [{ id: 'XY_blkutOag', title: 'Royal Court | D&D/TTRPG Ambience', channel: 'D&D/TTRPG Ambience' }],
+    court: [{ id: '0KiLzA67tz8', title: 'Royal Court | Fantasy Ambiance and Music for Tabletop RPGs', channel: 'Michael Ghelfi Studios' }],
     temple: [{ id: 'bD4L0j5SrFM', title: 'Holy Temple | Sacred Ambience', channel: 'D&D Ambience' }],
 
     camp: [{ id: '7KFoj-SOfHs', title: 'D&D Ambience — Night Camp in Woods', channel: 'D&D Ambience' }],
@@ -182,7 +182,7 @@
     ],
     castle: [
       { id: 'MvK_Q8PbdKU', title: 'Castle Throne Room Ambience | Grand Fantasy Hall', channel: 'D&D Ambience' },
-      { id: 'XY_blkutOag', title: 'Royal Court | D&D/TTRPG Ambience', channel: 'D&D/TTRPG Ambience' },
+      { id: '0KiLzA67tz8', title: 'Royal Court | Fantasy Ambiance and Music for Tabletop RPGs', channel: 'Michael Ghelfi Studios' },
     ],
     blacksmith: [
       { id: 'gsn1HnI1pCQ', title: 'RPG | D&D Ambience - Underground Forge (lava, fire, anvil)', channel: 'D&D Ambience' },
@@ -198,6 +198,19 @@
       { id: 'L5w4Ys2e0Aw', title: 'Wild West Saloon Ambience | Saloon Soundscape', channel: 'Wild West Ambience' },
       { id: '50JXzFixi98', title: 'Saloon Ambience / Wild West Music / ASMR', channel: 'Wild West Ambience' },
     ],
+
+    graveyard: [{ id: '9DMvOFglC9A', title: 'D&D Ambience | Graveyard | Haunted, Creepy, Scary, Eerie, Crows, Immersive', channel: 'D&D Ambience' }],
+    desert: [{ id: '4E-_Xpj0Mgo', title: 'Windy Desert | Immersive, Realistic Ambience | 1 Hour', channel: 'D&D Ambience' }],
+    swamp: [{ id: 'juMabblyLZU', title: 'D&D Ambience - Fetid Swamp', channel: 'D&D Ambience' }],
+    underwater: [{ id: 'L93zhTneGBU', title: 'D&D Ambience | Underwater | Animals, Mysteries, Depths, Kraken?', channel: 'D&D Ambience' }],
+    tundra: [{ id: 'RhvyGiJs120', title: 'D&D Ambience | Frozen Tundra | Winds, Boreal, Cold, Arctic', channel: 'D&D Ambience' }],
+    volcano: [{ id: 'i56VB6j6kHE', title: 'Inside A Volcano | Magma, Searing Fire, Lava, Ambience | 1 Hour', channel: 'D&D Ambience' }],
+    harbor: [{ id: 't0AmfPQMs4k', title: 'Medieval Harbor | Medieval Ambience | 1 Hour', channel: 'D&D Ambience' }],
+    laboratory: [{ id: 'b7bdcpbdjB4', title: 'D&D Ambience | Alchemy Laboratory | Potionshop, Magic, Secret Recipes, Immersive', channel: 'D&D Ambience' }],
+    carnival: [{ id: 'Ggh6tk5XHD8', title: 'Welcome to the Circus | DnD RPG Ambience Music | Witchlight Carnival Feywild', channel: '(unverified channel)' }],
+    library: [{ id: '1TwQY4dkWv0', title: 'RPG | D&D Ambience - Old Library (pages, writing, reading)', channel: 'D&D Ambience' }],
+    prison: [{ id: 'FVmWdIwjgKA', title: 'D&D Ambience | Prison | Jail, Dungeon, Solitary, Fantasy, Immersive, Rats, Guards', channel: 'D&D Ambience' }],
+    arena: [{ id: 'v5c0zLmVZR4', title: 'Arena Fight | Medieval Ambience | 1 Hour', channel: 'D&D Ambience' }],
   };
 
   const LABELS = { explore:'Explore', forest:'Forest', cave:'Underdark', sailing:'Sailing', storm:'Storm', nightstreets:'Night Streets',
@@ -207,13 +220,27 @@
     camp:'Camp', shipcabin:'Ship Cabin',
     combat:'Combat', boss:'Boss Fight', stealth:'Stealth', chase:'Chase', horror:'Horror',
     mystery:'Mystery', ominous:'Ominous', sorrow:'Sorrow', triumph:'Triumph',
-    western:'Western' };
+    western:'Western',
+    graveyard:'Graveyard', desert:'Desert', swamp:'Swamp', underwater:'Underwater', tundra:'Frozen Tundra', volcano:'Volcano', harbor:'Harbor',
+    laboratory:'Laboratory', carnival:'Carnival', library:'Library',
+    prison:'Prison', arena:'Arena' };
 
   // ---- Discover & curate: no API key needed. "Search YouTube" opens a real search tab;
   // candidates get added (by you, or by your GM via the console/javascript tool) to CANDIDATES
   // below, then reviewed here with thumbs up/down. Verdicts persist in this browser's localStorage. ----
   const CANDIDATES = {};
   const LIB_KEY = 'ambience_verdicts';
+  const CAND_KEY = 'ambience_pending_candidates';
+
+  function loadCandidates(){
+    try {
+      const d = JSON.parse(localStorage.getItem(CAND_KEY));
+      if (d) Object.keys(d).forEach(m => { if (VIDEOS[m]) CANDIDATES[m] = d[m]; });
+    } catch(e){}
+  }
+  function saveCandidates(){
+    try { localStorage.setItem(CAND_KEY, JSON.stringify(CANDIDATES)); } catch(e){}
+  }
 
   function loadVerdicts(){
     try { return JSON.parse(localStorage.getItem(LIB_KEY)) || { approved: [], rejected: [] }; }
@@ -250,6 +277,7 @@
     }
     if (!CANDIDATES[mood]) CANDIDATES[mood] = [];
     CANDIDATES[mood].push({ id, title: title || '(untitled)', channel: channel || '' });
+    saveCandidates();
     renderCandidates();
     showToast('Added "' + (title || id) + '" to ' + (LABELS[mood] || mood) + ' for review.');
     return true;
@@ -269,6 +297,7 @@
     const track = list[idx];
     list.splice(idx, 1);
     VIDEOS[mood].push(track);
+    saveCandidates();
     const verdicts = loadVerdicts();
     verdicts.approved.push({ mood, id: track.id, title: track.title, channel: track.channel });
     saveVerdicts(verdicts);
@@ -285,6 +314,7 @@
     const verdicts = loadVerdicts();
     if (!verdicts.rejected.includes(id)) verdicts.rejected.push(id);
     saveVerdicts(verdicts);
+    saveCandidates();
     renderCandidates();
     showToast('Rejected "' + track.title + '" — won\'t be suggested again.');
   };
@@ -469,6 +499,7 @@
       document.getElementById('cand-channel').value = '';
     }
   });
+  loadCandidates();
   renderCandidates();
 
   renderAll();
